@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados da Simulação</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Resultados da Simulação de Monte Carlo</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                Estatísticas do Projeto
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>Média de duração:</th>
+                        <td>{{ "%.1f"|format(stats.mean) }} dias</td>
+                    </tr>
+                    <tr>
+                        <th>Mediana:</th>
+                        <td>{{ "%.1f"|format(stats.median) }} dias</td>
+                    </tr>
+                    <tr>
+                        <th>Desvio padrão:</th>
+                        <td>{{ "%.1f"|format(stats.std) }} dias</td>
+                    </tr>
+                    <tr>
+                        <th>Mínimo:</th>
+                        <td>{{ "%.1f"|format(stats.min) }} dias</td>
+                    </tr>
+                    <tr>
+                        <th>Máximo:</th>
+                        <td>{{ "%.1f"|format(stats.max) }} dias</td>
+                    </tr>
+                    {% if target_duration %}
+                    <tr>
+                        <th>Probabilidade de conclusão em {{ target_duration }} dias:</th>
+                        <td>{{ "%.1f"|format(stats.probability) }}%</td>
+                    </tr>
+                    {% endif %}
+                </table>
+                
+                <h5 class="mt-4">Percentis:</h5>
+                <table class="table">
+                    {% for p, value in stats.percentiles.items() %}
+                    <tr>
+                        <th>P{{ p }}:</th>
+                        <td>{{ "%.1f"|format(value) }} dias</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                Correlações com a Duração Total
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    {% for activity, correlation in stats.correlations.items() %}
+                    <tr>
+                        <th>{{ activity }}:</th>
+                        <td>{{ "%.3f"|format(correlation) }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                Visualizações
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <h5>Distribuição da Duração Total</h5>
+                        <img src="data:image/png;base64,{{ graphs.histogram }}" class="img-fluid">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <h5>Durações das Atividades</h5>
+                        <img src="data:image/png;base64,{{ graphs.boxplot }}" class="img-fluid">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <h5>Matriz de Correlação</h5>
+                        <img src="data:image/png;base64,{{ graphs.correlation }}" class="img-fluid">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <h5>Probabilidade Cumulativa</h5>
+                        <img src="data:image/png;base64,{{ graphs.cumulative }}" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <a href="/" class="btn btn-primary mb-5">Nova Simulação</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

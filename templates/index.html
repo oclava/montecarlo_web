@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulação de Monte Carlo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Simulação de Monte Carlo para Gestão de Projetos</h1>
+        
+        <form method="POST" action="/">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Configuração da Simulação
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="num_simulations" class="form-label">Número de simulações:</label>
+                        <input type="number" class="form-control" id="num_simulations" name="num_simulations" value="10000" min="1000" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="target_duration" class="form-label">Prazo alvo para análise (dias, opcional):</label>
+                        <input type="number" step="0.1" class="form-control" id="target_duration" name="target_duration">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    Atividades do Projeto
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="activity_count" class="form-label">Quantidade de atividades:</label>
+                        <input type="number" class="form-control" id="activity_count" name="activity_count" min="1" required>
+                    </div>
+                    
+                    <div id="activities-container">
+                        <!-- Atividades serão adicionadas dinamicamente aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Executar Simulação</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('activity_count').addEventListener('change', function() {
+            const count = parseInt(this.value);
+            const container = document.getElementById('activities-container');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= count; i++) {
+                const activityHtml = `
+                    <div class="card mb-3 activity-card" id="activity-${i}">
+                        <div class="card-header">
+                            Atividade ${i}
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="activity_${i}_name" class="form-label">Nome da atividade:</label>
+                                <input type="text" class="form-control" id="activity_${i}_name" name="activity_${i}_name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Tipo de distribuição:</label>
+                                <select class="form-select distribution-select" name="activity_${i}_dist" data-activity="${i}" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="triangular">Triangular (min, modo, max)</option>
+                                    <option value="normal">Normal (média, desvio padrão)</option>
+                                    <option value="lognormal">Lognormal (μ, σ)</option>
+                                    <option value="pert">PERT (min, modo, max)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="distribution-params" id="params-${i}">
+                                <!-- Parâmetros serão adicionados dinamicamente aqui -->
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', activityHtml);
+            }
+            
+            // Adiciona listeners para os selects de distribuição
+            document.querySelectorAll('.distribution-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const activityNum = this.dataset.activity;
+                    const distType = this.value;
+                    const paramsDiv = document.getElementById(`params-${activityNum}`);
+                    
+                    let paramsHtml = '';
+                    
+                    if (distType === 'triangular') {
+                        paramsHtml = `
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="activity_${activityNum}_min" class="form-label">Mínimo (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_min" name="activity_${activityNum}_min" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="activity_${activityNum}_mode" class="form-label">Modo (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_mode" name="activity_${activityNum}_mode" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="activity_${activityNum}_max" class="form-label">Máximo (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_max" name="activity_${activityNum}_max" required>
+                                </div>
+                            </div>
+                        `;
+                    } else if (distType === 'normal') {
+                        paramsHtml = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="activity_${activityNum}_mean" class="form-label">Média (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_mean" name="activity_${activityNum}_mean" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="activity_${activityNum}_std" class="form-label">Desvio padrão (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_std" name="activity_${activityNum}_std" required>
+                                </div>
+                            </div>
+                        `;
+                    } else if (distType === 'lognormal') {
+                        paramsHtml = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="activity_${activityNum}_mu" class="form-label">Média do log (μ):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_mu" name="activity_${activityNum}_mu" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="activity_${activityNum}_sigma" class="form-label">Desvio padrão do log (σ):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_sigma" name="activity_${activityNum}_sigma" required>
+                                </div>
+                            </div>
+                        `;
+                    } else if (distType === 'pert') {
+                        paramsHtml = `
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="activity_${activityNum}_min" class="form-label">Mínimo (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_min" name="activity_${activityNum}_min" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="activity_${activityNum}_mode" class="form-label">Modo (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_mode" name="activity_${activityNum}_mode" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="activity_${activityNum}_max" class="form-label">Máximo (dias):</label>
+                                    <input type="number" step="0.1" class="form-control" id="activity_${activityNum}_max" name="activity_${activityNum}_max" required>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    paramsDiv.innerHTML = paramsHtml;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

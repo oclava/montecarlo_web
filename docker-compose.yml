@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web:
+    image: oclava/montecarlodc-web:1.6
+    container_name: montecarlodc-web
+    environment:
+      - FLASK_ENV=production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.montecarlodc.rule=Host(`montecarlo.deepcore.com.br`)"
+      - "traefik.http.routers.montecarlodc.entrypoints=websecure"
+      - "traefik.http.routers.montecarlodc.tls.certresolver=myresolver"
+      - "traefik.http.services.montecarlodc.loadbalancer.server.port=5000"
+    networks:
+      - portainer_default
+      - flask_net
+
+networks:
+  flask_net:
+    driver: bridge
+  portainer_default:
+    external: true 
